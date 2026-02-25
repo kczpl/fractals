@@ -8,9 +8,12 @@ import time
 import numpy as np
 
 try:
-    from fractal_engine import compute_mandelbrot, compute_julia
+    from fractal_engine import (  # type: ignore[import-not-found]
+        compute_julia,
+        compute_mandelbrot,
+    )
 except ImportError:
-    _ESCAPE_RADIUS_SQ = 256.0 ** 2
+    _ESCAPE_RADIUS_SQ = 256.0**2
     _LOG2_LOG2_ESCAPE = math.log2(math.log2(256.0))
 
     def compute_mandelbrot(center_x, center_y, zoom, width, height, max_iter):
@@ -25,7 +28,12 @@ except ImportError:
                     zr2, zi2 = zr * zr, zi * zi
                     if zr2 + zi2 > _ESCAPE_RADIUS_SQ:
                         abs_z = math.sqrt(zr2 + zi2)
-                        result[row, col] = iteration + 1.0 - math.log2(math.log2(abs_z)) + _LOG2_LOG2_ESCAPE
+                        result[row, col] = (
+                            iteration
+                            + 1.0
+                            - math.log2(math.log2(abs_z))
+                            + _LOG2_LOG2_ESCAPE
+                        )
                         break
                     zi = 2.0 * zr * zi + ci
                     zr = zr2 - zi2 + cr
@@ -33,7 +41,9 @@ except ImportError:
                     result[row, col] = float(max_iter)
         return result
 
-    def compute_julia(center_x, center_y, zoom, width, height, max_iter, c_real, c_imag):
+    def compute_julia(
+        center_x, center_y, zoom, width, height, max_iter, c_real, c_imag
+    ):
         scale = 4.0 / (zoom * min(width, height))
         result = np.zeros((height, width), dtype=np.float64)
         for row in range(height):
@@ -44,7 +54,12 @@ except ImportError:
                     zr2, zi2 = zr * zr, zi * zi
                     if zr2 + zi2 > _ESCAPE_RADIUS_SQ:
                         abs_z = math.sqrt(zr2 + zi2)
-                        result[row, col] = iteration + 1.0 - math.log2(math.log2(abs_z)) + _LOG2_LOG2_ESCAPE
+                        result[row, col] = (
+                            iteration
+                            + 1.0
+                            - math.log2(math.log2(abs_z))
+                            + _LOG2_LOG2_ESCAPE
+                        )
                         break
                     zi = 2.0 * zr * zi + c_imag
                     zr = zr2 - zi2 + c_real
@@ -74,11 +89,14 @@ def apply_palette(iterations, max_iter, keyframes):
     colors = np.array([kf[1] for kf in keyframes])
 
     t = np.linspace(0.0, 1.0, 1024)
-    lut = np.stack([
-        np.interp(t, positions, colors[:, 0]),
-        np.interp(t, positions, colors[:, 1]),
-        np.interp(t, positions, colors[:, 2]),
-    ], axis=1).astype(np.uint8)
+    lut = np.stack(
+        [
+            np.interp(t, positions, colors[:, 0]),
+            np.interp(t, positions, colors[:, 1]),
+            np.interp(t, positions, colors[:, 2]),
+        ],
+        axis=1,
+    ).astype(np.uint8)
 
     height, width = iterations.shape
     rgb = np.zeros((height, width, 3), dtype=np.uint8)
@@ -91,7 +109,9 @@ def apply_palette(iterations, max_iter, keyframes):
         indices = normalized * 1023
         lower = np.clip(indices.astype(np.int64), 0, 1022)
         frac = (indices - lower)[:, np.newaxis]
-        rgb[outside] = (lut[lower] * (1.0 - frac) + lut[lower + 1] * frac).astype(np.uint8)
+        rgb[outside] = (lut[lower] * (1.0 - frac) + lut[lower + 1] * frac).astype(
+            np.uint8
+        )
 
     return rgb
 
@@ -170,10 +190,14 @@ def has_detail(spot, max_iter, min_escape_frac=0.05):
     center = spot["center"]
     zoom = spot["zoom"]
     if spot["fractal"] == "mandelbrot":
-        iters = compute_mandelbrot(center[0], center[1], zoom, probe_size, probe_size, max_iter)
+        iters = compute_mandelbrot(
+            center[0], center[1], zoom, probe_size, probe_size, max_iter
+        )
     else:
         c = spot["c"]
-        iters = compute_julia(center[0], center[1], zoom, probe_size, probe_size, max_iter, c[0], c[1])
+        iters = compute_julia(
+            center[0], center[1], zoom, probe_size, probe_size, max_iter, c[0], c[1]
+        )
     escaped = iters[iters < max_iter]
     if len(escaped) / (probe_size * probe_size) < min_escape_frac:
         return False
@@ -181,12 +205,18 @@ def has_detail(spot, max_iter, min_escape_frac=0.05):
 
 
 def main():
-    spot = generate_mandelbrot_spot() if random.random() < 0.65 else generate_julia_spot()
+    spot = (
+        generate_mandelbrot_spot() if random.random() < 0.65 else generate_julia_spot()
+    )
     for _ in range(10):
         probe_max_iter = int(200 + 80 * math.log2(max(spot["zoom"], 1.0)))
         if has_detail(spot, probe_max_iter):
             break
-        spot = generate_mandelbrot_spot() if random.random() < 0.65 else generate_julia_spot()
+        spot = (
+            generate_mandelbrot_spot()
+            if random.random() < 0.65
+            else generate_julia_spot()
+        )
 
     keyframes = generate_palette()
     center = spot["center"]
@@ -199,17 +229,24 @@ def main():
 
     ss_w, ss_h = width * 2, height * 2
     if spot["fractal"] == "mandelbrot":
-        iterations = compute_mandelbrot(center[0], center[1], zoom, ss_w, ss_h, max_iter)
+        iterations = compute_mandelbrot(
+            center[0], center[1], zoom, ss_w, ss_h, max_iter
+        )
     else:
         c = spot["c"]
-        iterations = compute_julia(center[0], center[1], zoom, ss_w, ss_h, max_iter, c[0], c[1])
+        iterations = compute_julia(
+            center[0], center[1], zoom, ss_w, ss_h, max_iter, c[0], c[1]
+        )
 
     rgb_hi = apply_palette(iterations, max_iter, keyframes)
     rgb = rgb_hi.reshape(height, 2, width, 2, 3).mean(axis=(1, 3)).astype(np.uint8)
     elapsed = time.perf_counter() - start
 
     render_to_terminal(rgb)
-    print(f"  \033[35m{spot['fractal']}\033[0m  {width}x{height}  {elapsed:.2f}s", file=sys.stderr)
+    print(
+        f"  \033[35m{spot['fractal']}\033[0m  {width}x{height}  {elapsed:.2f}s",
+        file=sys.stderr,
+    )
 
 
 if __name__ == "__main__":
